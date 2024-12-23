@@ -79,11 +79,11 @@ lm_eval --model hf \
 python -m train.sample \$CKPT --gpu_count 4 --output_file outputs/qwen2-5-3b-instruct-kto-01-${WEIGHTD}D-5e-6.json --datasets alpacaeval
 
 cd human-eval
-python human_eval/generation.py --model_path \$MODEL_PATH --model_id \$MODEL_ID
-python human_eval/evaluate_functional_correctness.py data/\$MODEL_ID_samples.jsonl
+python -m human_eval.generation --model_path \$MODEL_PATH --model_id \$MODEL_ID
+python -m human_eval.evaluate_functional_correctness data/\$MODEL_ID_samples.jsonl
 
-cd ../FastChat/fastchat/llm_judge/
-python gen_model_answer.py --model-path \$MODEL_PATH --model-id \$MODEL_ID
-python gen_judgment.py --model-list \$MODEL_ID --parallel 2
-python show_result.py --model-list \$MODEL_ID
+cd ../FastChat
+python -m fastchat.llm_judge.gen_model_answer --model-path \$MODEL_PATH --model-id \$MODEL_ID
+python -m fastchat.llm_judge.gen_judgment --model-list \$MODEL_ID --parallel 2
+python -m fastchat.llm_judge.show_result --model-list \$MODEL_ID
 "
