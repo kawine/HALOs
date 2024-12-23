@@ -58,29 +58,14 @@ export MODEL_PATH=Qwen/Qwen2.5-3B-Instruct
 export MODEL_ID=qwen-3b
 export CKPT=/scratch/gpfs/sl2998/models/qwen2-5-3B-instruct-kto-01-${WEIGHTD}D-5e-6/FINAL
 
-accelerate launch \
-    --config_file accelerate_config/fsdp_4gpu.yaml \
-    --machine_rank \$SLURM_PROCID \
-    --main_process_ip \$MASTER_ADDR \
-    --main_process_port \$MASTER_PORT \
-    launch.py loss=kto model=qwen datasets=[ultrabin] exp_name=qwen2-5-3B-instruct-kto-01-${WEIGHTD}D-5e-6 \
-    ++cache_dir=/scratch/gpfs/sl2998/models \
-    ++model.name_or_path=\$MODEL_PATH \
-    ++lr=5e-6 \
-    ++loss.beta=0.1 \
-    ++model.batch_size=8 ++model.gradient_accumulation_steps=4 ++model.eval_batch_size=8 \
-    ++loss.desirable_weight=${WEIGHTD}
-
-lm_eval --model hf \
-  --model_args pretrained=\$CKPT,tokenizer=\$CKPT,parallelize=True \
-  --tasks arc_easy,arc_challenge,winogrande,bbh_cot_fewshot,gsm8k_cot \
-  --batch_size 4
-
-python -m train.sample \$CKPT --gpu_count 4 --output_file outputs/qwen2-5-3b-instruct-kto-01-${WEIGHTD}D-5e-6.json --datasets alpacaeval
-
 cd human-eval
-python -m human_eval.generation --model_path \$MODEL_PATH --model_id \$MODEL_ID
-python -m human_eval.evaluate_functional_correctness data/\$MODEL_ID_samples.jsonl
+python -m human_eval.batch_generation \
+    --model-path \$MODEL_PATH \
+    --model-id \$MODEL_ID \
+    --num_samples_per_task 200 \
+    --max-new-token 512 \
+    --batch-size 1024
+python -m human_eval.evaluate_functional_correctness data/\${MODEL_ID}_samples.jsonl
 
 cd ../FastChat
 python -m fastchat.llm_judge.gen_model_answer --model-path \$MODEL_PATH --model-id \$MODEL_ID
